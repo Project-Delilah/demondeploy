@@ -25,12 +25,10 @@ demon deploy https://github.com/you/site.git
 Download the latest release binary (no Python needed):
 
 ```bash
-sudo wget -O /usr/local/bin/demon "https://github.com/Project-Delilah/demondeploy/releases/latest/download/demon-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)" && sudo chmod +x /usr/local/bin/demon && demon setup
+sudo wget -O /usr/local/bin/demon "https://github.com/Project-Delilah/demondeploy/releases/latest/download/demon-linux-$(uname -m)" && sudo chmod +x /usr/local/bin/demon && demon setup
 ```
 
-The binary goes in `/usr/local/bin`, not `/bin`: `/bin` belongs to the package manager on Linux and is read-only on macOS. macOS has no `wget` by default, so use `sudo curl -fL -o /usr/local/bin/demon "<same URL>"` instead. Binaries are built for Linux (x86_64, aarch64; glibc 2.35+) and macOS (arm64, x86_64), and each release has a `SHA256SUMS` file.
-
-> **Deploying needs Linux with systemd.** The macOS binary runs, but demondeploy manages apps through systemd user services, which macOS doesn't have.
+The binary goes in `/usr/local/bin`, not `/bin`, because `/bin` belongs to the package manager. Builds are for Linux x86_64 and aarch64 (glibc 2.35+, so Ubuntu 22.04, Debian 12, Fedora 36 and newer, and Arch). A Linux system with systemd is required. Each release has a `SHA256SUMS` file.
 
 You also need `git` for repos, `node` for Node apps and `uv` for Python apps.
 
