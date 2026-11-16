@@ -1,0 +1,136 @@
+/* Dracula palette, same as abu */
+Screen { background: #1e1f29; }
+Header { background: #44475a; color: #f8f8f2; }
+Footer { background: #282a36; }
+
+/* ---------- summary line at the top of a screen ---------- */
+.summary {
+    height: auto;
+    padding: 1 1 0 1;
+    background: #282a36;
+    color: #f8f8f2;
+}
+.hint { color: #6272a4; padding: 0 1; height: auto; }
+.section { color: #bd93f9; text-style: bold; margin: 1 1 0 1; height: 1; }
+
+/* ---------- tables ---------- */
+DataTable {
+    height: 1fr;
+    margin: 0 1;
+    border: round #6272a4;
+    background: #1e1f29;
+    scrollbar-size-vertical: 1;
+}
+DataTable:focus { border: round #bd93f9; }
+DataTable > .datatable--header { background: #282a36; color: #6272a4; text-style: bold; }
+DataTable > .datatable--cursor { background: #44475a; text-style: none; }
+DataTable:focus > .datatable--cursor { background: #44475a; }
+DataTable > .datatable--hover { background: #2c2e3b; }
+#deps { height: 1fr; }
+
+/* ---------- empty state ---------- */
+#empty {
+    height: 1fr;
+    align: center middle;
+    display: none;
+}
+#empty-box {
+    width: 64;
+    height: auto;
+    padding: 1 3;
+    border: round #bd93f9;
+    background: #282a36;
+}
+#empty-title { text-style: bold; color: #bd93f9; width: 100%; content-align: center middle; }
+#empty-body { width: 100%; text-align: center; color: #f8f8f2; margin-top: 1; }
+
+/* ---------- app details ---------- */
+#info {
+    height: auto;
+    margin: 0 1;
+    padding: 0 1;
+    border: round #6272a4;
+    background: #282a36;
+    color: #f8f8f2;
+}
+
+/* ---------- deploy screen ---------- */
+#dp { padding: 1 2; height: 1fr; }
+#dp-top { height: auto; margin-bottom: 1; }
+#dp-state { width: auto; margin-right: 2; }
+#dp-target { width: 1fr; }
+#dp-steps { height: auto; margin-top: 1; }
+#dp-meta { height: auto; color: #6272a4; }
+.dp-label { color: #bd93f9; text-style: bold; margin-top: 1; }
+#dp-log, #log {
+    height: 1fr;
+    margin-top: 1;
+    border: round #6272a4;
+    background: #282a36;
+    padding: 0 1;
+}
+#log { margin: 0 1; }
+
+/* ---------- forms ---------- */
+#form { height: 1fr; padding: 0 2; }
+.field { height: auto; margin-top: 1; }
+.field Label { color: #bd93f9; text-style: bold; width: 100%; }
+.field .help { color: #6272a4; }
+Input { border: tall #44475a; background: #282a36; color: #f8f8f2; }
+Input:focus { border: tall #bd93f9; }
+Input.-invalid { border: tall #ff5555; }
+Select > SelectCurrent { border: tall #44475a; background: #282a36; }
+Select:focus > SelectCurrent { border: tall #bd93f9; }
+#detect-wrap { height: auto; }
+#detect-loading { height: 3; color: #50fa7b; display: none; }
+#notes { color: #f1fa8c; height: auto; margin-top: 1; }
+.switch-row { height: auto; margin-top: 1; }
+.switch-row Label { width: auto; padding: 1 1 0 1; color: #f8f8f2; }
+Switch { background: #282a36; border: tall #44475a; }
+Switch:focus { border: tall #bd93f9; }
+Switch.-on > .switch--slider { color: #50fa7b; }
+#form-buttons { height: auto; margin: 1 0; }
+#form-buttons Button { margin-right: 2; }
+
+/* ---------- setup ---------- */
+#checks { height: auto; max-height: 1fr; margin: 0 1; border: round #6272a4; background: #1e1f29; }
+#checks:focus { border: round #bd93f9; }
+#checks > .option-list--option-highlighted { background: #44475a; }
+#setup-out {
+    height: 1fr;
+    margin: 1 1 0 1;
+    border: round #6272a4;
+    background: #282a36;
+    padding: 0 1;
+}
+
+/* ---------- dialogs ---------- */
+Confirm, InputModal, MessageModal { align: center middle; background: #00000099; }
+#dialog {
+    width: 72;
+    max-width: 95%;
+    height: auto;
+    max-height: 90%;
+    padding: 1 2;
+    border: thick #bd93f9;
+    background: #282a36;
+}
+#dialog.error { border: thick #ff5555; }
+#dialog-title { text-style: bold; color: #bd93f9; margin-bottom: 1; }
+#dialog.error #dialog-title { color: #ff5555; }
+#dialog-body { margin-bottom: 1; height: auto; max-height: 20; overflow-y: auto; }
+#dialog-buttons { height: auto; align: center middle; }
+#dialog-buttons Button { margin: 0 1; }
+#dialog Input { margin-bottom: 1; }
+
+* {
+    scrollbar-background: #282a36;
+    scrollbar-color: #6272a4;
+    scrollbar-color-hover: #bd93f9;
+    scrollbar-color-active: #bd93f9;
+    scrollbar-size-vertical: 1;
+}
+
+/* two-column field rows */
+Horizontal.field > Vertical { height: auto; width: 1fr; }
+Horizontal.field > Vertical:first-child { margin-right: 2; }

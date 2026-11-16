@@ -1,0 +1,27 @@
+[project]
+name = "demondeploy"
+version = "0.1.0"
+description = "Self-hosted, Vercel-style deployments on your own machine: systemd user services behind a Caddy proxy, with a TUI"
+requires-python = ">=3.11"
+dependencies = ["textual>=0.80"]
+
+[project.scripts]
+demon = "demondeploy.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["demondeploy"]
+
+[tool.setuptools.package-data]
+demondeploy = ["*.tcss"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
