@@ -65,6 +65,8 @@ def deployment_dir(name: str, dep_id: int) -> Path:
 
 def python_cmd() -> list[str]:
     """How systemd units should invoke demondeploy itself."""
+    if getattr(sys, "frozen", False):  # standalone binary (PyInstaller)
+        return [str(Path(sys.executable).resolve())]
     return [sys.executable, "-m", "demondeploy"]
 
 

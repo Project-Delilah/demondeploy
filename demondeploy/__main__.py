@@ -488,7 +488,19 @@ def build_parser() -> argparse.ArgumentParser:
     rc = sub.add_parser("_reconcile")
     rc.add_argument("--boot", action="store_true")
     sub.add_parser("_poll")
+    sub.add_parser("_selftest")
     return p
+
+
+def selftest() -> None:
+    """Used by CI on the built binary: everything imports and the stylesheet ships."""
+    from textual.css.stylesheet import Stylesheet
+    from . import app, deploy, domains, proxy, setup  # noqa: F401
+    css = Path(app.__file__).with_name("app.tcss")
+    sheet = Stylesheet()
+    sheet.read(css)
+    sheet.parse()
+    print(f"demondeploy {__version__}: ok ({len(sheet.rules)} style rules)")
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -502,6 +514,9 @@ def main(argv: list[str] | None = None) -> None:
             from .deploy import reconcile
             from .state import State
             reconcile(State(), boot=a.boot, out=print)
+            return
+        if a.cmd == "_selftest":
+            selftest()
             return
         if a.cmd == "_poll":
             from .deploy import poll

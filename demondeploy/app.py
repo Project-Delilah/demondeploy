@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -63,6 +64,20 @@ def log_text(line: str) -> Text:
     if line.startswith("!! "):
         return Text(line, style="bold #ff5555")
     return Text(line)
+
+
+_JOURNAL = re.compile(r"^\d{4}-\d\d-\d\dT(\d\d:\d\d:\d\d)\S*\s+\S+\s+([^\[:]+)(?:\[\d+\])?:\s?(.*)$")
+
+
+def format_journal_line(line: str) -> Text:
+    """'2026-…T18:41:27+05:30 host ident[pid]: msg' → '18:41:27 ident msg' (no hostname)."""
+    m = _JOURNAL.match(line)
+    if not m:
+        return Text(line, style="#6272a4")
+    clock, ident, msg = m.groups()
+    bad = any(w in msg.lower() for w in ("error", "exception", "traceback", "fatal"))
+    style = "#ff5555" if bad else ("#6272a4" if ident == "systemd" else "#f8f8f2")
+    return Text.assemble((clock + " ", "#6272a4"), (f"{ident[:16]:16} ", "#bd93f9"), (msg, style))
 
 
 def app_status(st: State, p: Project) -> str:
@@ -391,7 +406,7 @@ class DashboardScreen(BaseScreen):
         self.app.sub_title = "Apps"
         t = self.query_one("#apps", DataTable)
         t.add_column("APP", key="app")
-        t.add_column("STATUS", key="status", width=14)
+        t.add_column("STATUS", key="status", width=12)
         t.add_column("URL", key="url")
         t.add_column("TYPE", key="type")
         t.add_column("DEPLOYED", key="deployed")
@@ -421,17 +436,18 @@ class DashboardScreen(BaseScreen):
             doms = st.domains(p.name)
             url = Text(proxy.app_url(st, p.name), style="#8be9fd")
             if doms:
-                url.append(f"  +{len(doms)} domain{'s' if len(doms) > 1 else ''}", style="#6272a4")
+                url.append(f" +{len(doms)}", style="#ffb86c")
             shown = dep or (last[0] if last else None)
             commit = Text()
             if shown:
                 commit.append(shown.sha[:7] + " " if shown.sha else "", style="#ffb86c")
-                commit.append(shown.message[:40], style="#f8f8f2")
+                msg = shown.message if len(shown.message) <= 24 else shown.message[:23] + "…"
+                commit.append(msg, style="#f8f8f2")
             kind = (dep.kind if dep else p.kind)
             src = "git" if p.source_type == "git" else "dir"
             rows.append((p.name, [
                 Text(p.name, style="bold #f8f8f2"), status_dot(status), url,
-                Text(f"{kind} · {src}", style="#6272a4"),
+                Text(f"{kind}·{src}", style="#6272a4"),
                 Text(ago(shown.created if shown else None), style="#f8f8f2"),
                 commit, Text(mem, style="#6272a4")]))
         proxy_ok = sysd.is_active(paths.PROXY_UNIT)
@@ -950,7 +966,7 @@ class AppScreen(BaseScreen):
         Binding("d", "redeploy", "Redeploy"),
         Binding("r", "rollback", "Rollback"),
         Binding("l", "logs", "Logs"),
-        Binding("b", "build_log", "Build log"),
+        Binding("b", "build_log", "Build log", show=False),
         Binding("e", "env", "Env"),
         Binding("o", "domains", "Domains"),
         Binding("c", "settings", "Settings"),
@@ -1021,7 +1037,8 @@ class AppScreen(BaseScreen):
             i.append(v if isinstance(v, Text) else Text(v, style=style))
             i.append("\n")
 
-        src = p.source + (f"  ({p.branch})" if p.source_type == "git" else "")
+        src = p.source if p.source_type == "git" else p.source.replace(str(Path.home()), "~", 1)
+        src += f"  ({p.branch})" if p.source_type == "git" else ""
         row("source", src)
         if p.source_type == "git":
             row("autodeploy", "on — new commits deploy within a minute" if p.autodeploy else "off (a toggles)",
@@ -1224,7 +1241,7 @@ class LogsScreen(BaseScreen):
     def compose(self) -> ComposeResult:
         yield Header()
         yield Static(Text.assemble(("Live output of ", "#6272a4"), (self.name_, "bold #f8f8f2"),
-                                   (f"   {self.unit}", "#6272a4")), classes="summary")
+                                   ("   ·   ", "#6272a4"), (self.unit, "#6272a4")), classes="summary")
         yield RichLog(id="log", wrap=True, markup=False, max_lines=20000, auto_scroll=True)
         yield Footer()
 
@@ -1239,12 +1256,7 @@ class LogsScreen(BaseScreen):
         assert self.proc.stdout
         log = self.query_one(RichLog)
         for line in self.proc.stdout:
-            line = line.rstrip("\n")
-            style = "#ff5555" if any(w in line.lower() for w in ("error", "exception", "traceback")) else ""
-            # dim the "timestamp host ident[pid]:" prefix
-            head, sep, rest = line.partition(": ")
-            t = Text(head + sep, style="#6272a4") + Text(rest, style=style) if sep else Text(line, style=style)
-            self.app.call_from_thread(log.write, t)
+            self.app.call_from_thread(log.write, format_journal_line(line.rstrip("\n")))
 
     def on_unmount(self) -> None:
         if self.proc and self.proc.poll() is None:

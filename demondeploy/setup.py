@@ -28,6 +28,12 @@ class Check:
     required: bool = True
 
 
+def tilde(p: Path | str) -> str:
+    home = str(Path.home())
+    s = str(p)
+    return "~" + s[len(home):] if s == home or s.startswith(home + "/") else s
+
+
 def unpriv_port_start() -> int:
     try:
         return int(Path("/proc/sys/net/ipv4/ip_unprivileged_port_start").read_text())
@@ -145,15 +151,13 @@ def checks(st: State | None = None) -> list[Check]:
 
     caddy = proxy.find_caddy()
     out.append(Check("caddy", "Caddy proxy binary", caddy is not None,
-                     f"{caddy} ({proxy.caddy_version(caddy)})" if caddy else
+                     f"{tilde(caddy)} ({proxy.caddy_version(caddy)})" if caddy else
                      f"not installed: will download Caddy {proxy.CADDY_VERSION} (checksum verified)",
                      fix_caddy))
 
     low = unpriv_port_start() <= 80
     out.append(Check("ports", "Ports 80/443 (HTTPS for custom domains)", low,
-                     "allowed" if low else
-                     f"blocked: needs net.ipv4.ip_unprivileged_port_start=80 ({SYSCTL_FILE}); "
-                     "without it apps are served on :8080 and domains get no HTTPS",
+                     "allowed" if low else "off: apps use :8080, domains get no HTTPS",
                      fix_ports, needs_sudo=True, required=False))
 
     want, why = wanted_http_port(st)

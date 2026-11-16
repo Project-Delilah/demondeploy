@@ -1,0 +1,100 @@
+name: Build binaries
+
+# Push a tag like v0.2.0 to build and publish a release.
+# "Run workflow" in the Actions tab builds the binaries without releasing them.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Asset names match `uname -s`-`uname -m`, so the README one-liner can pick the right one.
+          - os: ubuntu-22.04        # oldest glibc we support: 2.35
+            asset: demon-linux-x86_64
+          - os: ubuntu-22.04-arm
+            asset: demon-linux-aarch64
+          - os: macos-15
+            asset: demon-darwin-arm64
+          - os: macos-15-intel
+            asset: demon-darwin-x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Stamp version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          python3 - <<'EOF'
+          import os, pathlib
+          v = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+          p = pathlib.Path("demondeploy/__init__.py")
+          p.write_text(f'__version__ = "{v}"\n')
+          print("version", v)
+          EOF
+
+      - name: Test
+        run: uv run --frozen pytest -q
+
+      - name: Build
+        run: |
+          uv run --frozen --with "pyinstaller>=6.11,<7" pyinstaller \
+            --onefile --name demon --clean --noconfirm --log-level WARN \
+            --paths "$PWD" \
+            --add-data "$PWD/demondeploy/app.tcss:demondeploy" \
+            --collect-submodules demondeploy \
+            --collect-all textual \
+            --collect-submodules rich \
+            packaging/entry.py
+
+      - name: Smoke test
+        run: |
+          ./dist/demon --version
+          ./dist/demon _selftest
+          DEMON_HOME="$RUNNER_TEMP/demon-home" ./dist/demon ls
+
+      - name: Package
+        run: |
+          mkdir -p out
+          cp dist/demon "out/${{ matrix.asset }}"
+          cd out
+          if command -v sha256sum >/dev/null; then sha256sum "${{ matrix.asset }}" > "${{ matrix.asset }}.sha256"
+          else shasum -a 256 "${{ matrix.asset }}" > "${{ matrix.asset }}.sha256"; fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: out/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Checksums
+        run: cd out && cat *.sha256 > SHA256SUMS && rm *.sha256 && cat SHA256SUMS
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: out/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
